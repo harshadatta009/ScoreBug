@@ -356,7 +356,7 @@ export default function LiveScoringPage() {
         balls={balls}
         battingTeamName={isDemo ? "Demo XI" : "Batting XI"}
         resolveName={nameOf}
-        backHref={isDemo ? "/matches" : `/matches/${matchId}`}
+        backHref={isDemo ? "/" : `/matches/${matchId}`}
         isLive
         onEditNames={openNames}
       />

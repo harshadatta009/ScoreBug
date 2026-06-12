@@ -156,6 +156,11 @@ app.addEventListeners();
 // ─── SKIP_WAITING — triggered by the update-available banner in the UI ────────
 
 self.addEventListener("message", (event: ExtendableMessageEvent) => {
+  // Only honor messages from our own same-origin clients. A cross-origin window
+  // must not be able to drive the service worker (e.g. force skipWaiting).
+  // `origin` is "" for some same-origin client posts, so treat empty as same-origin.
+  if (event.origin !== "" && event.origin !== self.location.origin) return;
+
   const data = event.data as SWMessage | undefined;
   if (data?.type === "SKIP_WAITING") {
     void self.skipWaiting();

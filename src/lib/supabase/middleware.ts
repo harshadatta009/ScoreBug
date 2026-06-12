@@ -5,28 +5,34 @@ import { createServerClient } from "@supabase/ssr";
 import type { Database } from "./database.types";
 
 /**
- * Routes an unauthenticated visitor may reach. Everything else requires a
- * session. Public reads (profiles, scorecards, leaderboards) are allowed so
- * pages are shareable like CricHeroes; the create/edit pages under these
- * prefixes self-guard with `requireUser()` and the DB's RLS is the backstop.
+ * The ONLY routes an unauthenticated visitor may reach. The app is otherwise
+ * fully gated — any other path redirects to /login (preserving the intended
+ * destination in `redirectTo`). The (app) pages additionally self-guard with
+ * `requireUser()` and the DB's RLS is the final backstop (defense in depth).
+ *
+ *  - `/`              marketing landing page
+ *  - `/login`,`/signup`  auth entry points
+ *  - `/auth/…`        OAuth / magic-link callback
+ *  - `/offline`       PWA offline fallback shell (must render with no session)
+ *
+ * The no-account "Try the live demo" scorer (`/match/demo/…`) is handled
+ * separately below; all other `/match/*` routes require an authenticated scorer.
  */
 const PUBLIC_PATH_PREFIXES = [
   "/login",
   "/signup",
-  "/auth", // OAuth / magic-link callback
-  "/match", // full-screen live scorer + public scorecards
-  "/matches", // match list + summaries
-  "/teams", // team profiles + squads
-  "/players", // public player profiles
-  "/tournaments", // tournament hub, fixtures, points tables
-  "/stats", // leaderboards
-  "/", // landing page
+  "/auth",
+  "/offline",
 ] as const;
 
 function isPublicPath(pathname: string): boolean {
   if (pathname === "/") return true;
+  // The demo scorer is the only publicly reachable match route.
+  if (pathname === "/match/demo" || pathname.startsWith("/match/demo/")) {
+    return true;
+  }
   return PUBLIC_PATH_PREFIXES.some(
-    (p) => p !== "/" && (pathname === p || pathname.startsWith(`${p}/`)),
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
 }
 
