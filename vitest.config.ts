@@ -28,9 +28,17 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov", "html"],
+      // The Vitest unit suite owns the pure domain logic (scoring engine, stats).
+      // UI, pages, stores, server actions and lib glue are exercised by the
+      // Playwright E2E suite instead, so we scope the coverage gate to the
+      // domain — otherwise the (intentionally) untested UI drags the global
+      // number down and the threshold stops measuring anything meaningful.
+      include: ["src/domain/**"],
       exclude: [
         "node_modules/**",
         "tests/e2e/**",
+        "**/__tests__/**",
+        "**/*.test.{ts,tsx}",
         "**/*.config.{ts,mjs,js}",
         "**/*.d.ts",
         ".next/**",
