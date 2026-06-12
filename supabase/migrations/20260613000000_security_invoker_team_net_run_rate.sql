@@ -1,0 +1,20 @@
+-- ----------------------------------------------------------------------------
+-- Fix Supabase Security Advisor: "Security Definer View" (CRITICAL) on
+-- public.team_net_run_rate.
+--
+-- A Postgres view runs with the privileges and RLS of its OWNER by default
+-- (SECURITY DEFINER behavior), so queries through the view bypass the calling
+-- user's row-level security. We flip it to SECURITY INVOKER so the view honors
+-- the *querying* user's RLS instead.
+--
+-- This is behavior-preserving: the view's only base table, team_statistics,
+-- already grants public read (`create policy team_statistics_select ...
+-- for select using (true)`), so anon and authenticated readers see exactly the
+-- same rows — the change just removes the privilege-escalation surface.
+--
+-- The original view definition (20260101000200_functions_triggers.sql) has also
+-- been updated to create the view with security_invoker, so a fresh
+-- `supabase db reset` is correct from the start; this ALTER fixes already
+-- deployed databases.
+-- ----------------------------------------------------------------------------
+alter view public.team_net_run_rate set (security_invoker = on);

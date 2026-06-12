@@ -411,7 +411,12 @@ comment on function public.refresh_team_statistics(uuid) is
 --    (assumes 6 balls/over for the leaderboard; per-match revised overs are a
 --    DLS concern handled in the engine). Guards against divide-by-zero.
 -- ----------------------------------------------------------------------------
-create or replace view public.team_net_run_rate as
+-- security_invoker: the view enforces the querying user's permissions + RLS
+-- rather than the view owner's (avoids the "Security Definer View" advisor).
+-- Safe here because team_statistics is public-read (`for select using (true)`).
+create or replace view public.team_net_run_rate
+with (security_invoker = true)
+as
 select
   ts.team_id,
   ts.matches,
