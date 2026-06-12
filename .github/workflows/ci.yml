@@ -1,0 +1,224 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# Cancel in-flight runs on the same branch/PR so we don't waste minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Needed by Next.js / Supabase clients at build time; use dummy values for CI
+  # so the build doesn't abort. Real values come from Vercel environment variables
+  # in production.
+  NEXT_PUBLIC_SUPABASE_URL: "https://placeholder.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: "placeholder-anon-key"
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────
+  # 1. Install + cache node_modules
+  # ────────────────────────────────────────────────────────────────────────────
+  install:
+    name: Install dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["20"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 2. Type check
+  # ────────────────────────────────────────────────────────────────────────────
+  typecheck:
+    name: TypeScript typecheck
+    needs: install
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["20"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Restore node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Run tsc --noEmit
+        run: npm run typecheck
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 3. Lint
+  # ────────────────────────────────────────────────────────────────────────────
+  lint:
+    name: ESLint
+    needs: install
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["20"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Restore node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Run ESLint
+        run: npm run lint
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 4. Unit tests + coverage
+  # ────────────────────────────────────────────────────────────────────────────
+  unit-tests:
+    name: Unit tests (Vitest)
+    needs: install
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["20"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Restore node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Run Vitest with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage to GitHub artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 5. Build
+  # ────────────────────────────────────────────────────────────────────────────
+  build:
+    name: Next.js build
+    needs: [typecheck, lint, unit-tests]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["20"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Restore node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: .next/
+          retention-days: 1
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # 6. E2E tests (Playwright) — PR only; requires a successful build
+  # ────────────────────────────────────────────────────────────────────────────
+  e2e:
+    name: E2E tests (Playwright)
+    needs: build
+    # Only run on PRs to avoid spending Playwright minutes on every push.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ["20"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Restore node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ matrix.node-version }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Restore build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: next-build
+          path: .next/
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: npm run test:e2e
+        env:
+          CI: "true"
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

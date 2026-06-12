@@ -1,0 +1,42 @@
+name: CodeQL Security Scan
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  # Weekly scheduled scan catches newly published CVEs.
+  schedule:
+    - cron: "30 2 * * 1" # Monday 02:30 UTC
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          # Use the default security-extended query suite to catch OWASP Top 10
+          # issues in addition to the core CodeQL defaults.
+          queries: security-extended
+
+      # Autobuild: CodeQL auto-detects the build system and compiles the code.
+      # For a Next.js project with no native bindings this works correctly.
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"

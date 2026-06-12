@@ -1,0 +1,87 @@
+# ============================================================================
+# CricScore — local Supabase config (supabase start)
+# Docs: https://supabase.com/docs/guides/cli/config
+# ============================================================================
+project_id = "cricscore"
+
+[api]
+enabled = true
+# REST/GraphQL endpoint port (PostgREST).
+port = 54321
+# Schemas exposed over the auto-generated API.
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+# Max rows returned by a single API request.
+max_rows = 1000
+
+[db]
+# Local Postgres port.
+port = 54322
+# Port used by `supabase db push --linked` shadow database for diffing.
+shadow_port = 54320
+# Must match the major version of the linked remote project.
+major_version = 15
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1:54321"
+
+# Email testing inbox (Inbucket) — captures signup/magic-link/reset emails locally.
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+# Max upload size for avatars / team logos / venue photos.
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+# Base URL the app is served from; used in email links + redirects.
+site_url = "http://localhost:3000"
+# Allowed post-auth redirect targets (OAuth + magic links).
+additional_redirect_urls = [
+  "http://localhost:3000",
+  "http://localhost:3000/auth/callback",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3000/auth/callback",
+]
+# JWT lifetime (1 hour); refresh tokens rotate.
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+# Open signup for the PWA's self-serve onboarding.
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+# Keep confirmations off locally for fast dev; ON in production via dashboard.
+enable_confirmations = false
+# Allow users to change their email (with re-confirmation in prod).
+double_confirm_changes = true
+secure_password_change = true
+
+# Google OAuth. Secrets are pulled from the local environment so they are never
+# committed: export SUPABASE_AUTH_GOOGLE_CLIENT_ID / _SECRET before `supabase start`.
+# In production these are configured in the Supabase dashboard.
+[auth.external.google]
+enabled = false
+client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
+skip_nonce_check = false
+
+[analytics]
+enabled = false

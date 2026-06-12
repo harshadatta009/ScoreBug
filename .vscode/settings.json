@@ -1,0 +1,65 @@
+{
+  // Format on save with Prettier (not ESLint format, which is slower).
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // TypeScript — use the workspace version so it matches tsconfig.json.
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // Tailwind CSS IntelliSense — point to the project config.
+  "tailwindCSS.experimental.configFile": "./tailwind.config.ts",
+
+  // ESLint flat config support.
+  "eslint.useFlatConfig": true,
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+
+  // Vitest explorer integration.
+  "vitest.enable": true,
+  "vitest.commandLine": "npx vitest",
+
+  // File nesting to keep the explorer tidy.
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "*.ts": "${capture}.test.ts, ${capture}.spec.ts",
+    "*.tsx": "${capture}.test.tsx, ${capture}.spec.tsx",
+    "package.json": "package-lock.json, .npmrc, .nvmrc, .node-version",
+    "tsconfig.json": "tsconfig.*.json",
+    ".eslintrc*": ".eslintignore, eslint.config.*",
+    ".prettierrc*": ".prettierignore",
+    "next.config.*": "next-env.d.ts, postcss.config.*"
+  },
+
+  // Spelling — add cricket / project-specific words.
+  "cSpell.words": [
+    "Serwist",
+    "scorebug",
+    "innings",
+    "powerplay",
+    "wicket",
+    "batter",
+    "bowler",
+    "striker",
+    "scorecard",
+    "legbye",
+    "noball",
+    "supabase",
+    "zustand",
+    "tanstack",
+    "jsdom",
+    "vitest",
+    "playwright",
+    "tailwindcss"
+  ],
+
+  // Hide generated / noise files from explorer.
+  "files.exclude": {
+    "**/.next": true,
+    "**/node_modules": true,
+    "**/coverage": true,
+    "**/playwright-report": true
+  }
+}

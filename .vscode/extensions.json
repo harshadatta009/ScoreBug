@@ -1,0 +1,33 @@
+{
+  "recommendations": [
+    // TypeScript / JS
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+
+    // Tailwind CSS
+    "bradlc.vscode-tailwindcss",
+
+    // Next.js / React
+    "dsznajder.es7-react-js-snippets",
+
+    // Testing
+    "vitest.explorer",
+    "ms-playwright.playwright",
+
+    // Database / Supabase
+    "supabase.supabase-vscode",
+
+    // Git
+    "eamodio.gitlens",
+
+    // Markdown
+    "yzhang.markdown-all-in-one",
+
+    // EditorConfig
+    "editorconfig.editorconfig",
+
+    // Code quality
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens"
+  ]
+}

@@ -1,0 +1,20 @@
+# Build output
+.next/
+out/
+
+# Generated files
+public/sw.js
+public/workbox-*.js
+src/lib/supabase/database.types.ts
+
+# Dependencies
+node_modules/
+
+# Test reports
+coverage/
+playwright-report/
+test-results/
+
+# Editor / OS
+.DS_Store
+*.log
