@@ -24,6 +24,7 @@ import {
 import { asId, type MatchId, type TeamId } from "@/domain/shared/ids";
 import { getUserRoles, requireUser } from "@/lib/auth/session";
 import { can } from "@/lib/auth/rbac";
+import { createClient } from "@/lib/supabase/server";
 import {
   createMatchRow,
   getMatchDetail,
@@ -122,6 +123,30 @@ export async function createMatch(
     scorerId: parsed.data.scorerId ?? user.id,
     createdBy: user.id,
   };
+
+  // ── TEMP DIAGNOSTIC (remove after debugging match-create RLS) ──────────────
+  // Compares the user id from getUser() against the auth.uid() that the
+  // DATA-PLANE connection actually presents to Postgres (via debug_whoami).
+  // If dbAuthUid is null while getUserId is set, the session token isn't
+  // reaching PostgREST — that is the cause of the matches INSERT RLS failure.
+  try {
+    const diagClient = await createClient();
+    const { data: gu } = await diagClient.auth.getUser();
+    const rpc = diagClient.rpc as unknown as (
+      fn: string,
+    ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    const { data: dbAuthUid, error: rpcErr } = await rpc("debug_whoami");
+    console.log("[DIAG createMatch]", {
+      requireUserId: user.id,
+      getUserId: gu.user?.id ?? null,
+      dbAuthUid: dbAuthUid ?? null,
+      rpcError: rpcErr?.message ?? null,
+      createdByToInsert: payload.createdBy,
+    });
+  } catch (diagErr) {
+    console.log("[DIAG createMatch] probe failed", diagErr);
+  }
+  // ── END TEMP DIAGNOSTIC ────────────────────────────────────────────────────
 
   try {
     const matchId = await createMatchRow(payload);
